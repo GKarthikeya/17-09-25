@@ -7,10 +7,10 @@ from attendance_scraper import login_and_get_attendance
 
 app = Flask(__name__)
 
-# --- Session config: store data temporarily on filesystem (/tmp) ---
+# --- Session config ---
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-change-me")
 app.config["SESSION_TYPE"] = "filesystem"
-app.config["SESSION_FILE_DIR"] = "/tmp/flask_session"
+app.config["SESSION_FILE_DIR"] = "/tmp/flask_session"  # Render-safe
 app.config["SESSION_PERMANENT"] = False
 Session(app)
 
@@ -41,7 +41,7 @@ def attendance():
     # --- Store streak & daily data in session ---
     session["daily_data"] = data.get("daily", {})
     session["streak_data"] = data.get("streak", {})
-    session["months"] = sorted({d[:7] for d in session["streak_data"].keys()})  # YYYY-MM
+    session["months"] = sorted({d[:7] for d in session["streak_data"].keys()})
     session.modified = True
 
     # --- Subject table ---
@@ -76,8 +76,8 @@ def streak():
     year, month = map(int, selected_month.split("-"))
 
     # --- Build calendar grid ---
-    cal = calendar.Calendar(firstweekday=0)  # Monday start
-    month_days = cal.monthdayscalendar(year, month)  # [[days in week], ...]
+    cal = calendar.Calendar(firstweekday=0)
+    month_days = cal.monthdayscalendar(year, month)
 
     return render_template(
         "streak.html",
@@ -91,5 +91,6 @@ def streak():
 
 
 if __name__ == "__main__":
-    # Local dev only; on Render we run via gunicorn from Dockerfile
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 10000)), debug=True)
+    # Local dev only; on Render we run via Gunicorn
+    debug_mode = os.getenv("FLASK_DEBUG", "false").lower() == "true"
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 10000)), debug=debug_mode)
