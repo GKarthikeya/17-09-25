@@ -58,7 +58,8 @@ def attendance():
             "status": sub["status"]
         })
 
-    return render_template("attendance.html", table_data=table_data, overall=data["overall"])
+    # --- Render dashboard.html ---
+    return render_template("dashboard.html", table_data=table_data, overall=data["overall"])
 
 
 @app.route("/streak")
