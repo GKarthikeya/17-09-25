@@ -11,7 +11,7 @@
     {% if error %}
       <div class="alert">{{ error }}</div>
     {% endif %}
-    <form action="{{ url_for('attendance') }}" method="post" class="form">
+    <form action="{{ url_for('dashboard') }}" method="post" class="form">
       <label>Username</label>
       <input type="text" name="username" required />
       <label>Password</label>
@@ -21,3 +21,4 @@
   </div>
 </body>
 </html>
+
