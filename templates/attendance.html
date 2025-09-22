@@ -1,41 +1,211 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Your Attendance</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Professional Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Attendance Calendar Card */
+    .attendance-card {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      color: #e5e7eb;
+    }
+    .attendance-card h3 {
+      margin-bottom: 12px;
+      font-weight: 700;
+      font-size: 1.25rem;
+      color: #f9fafb;
+    }
+    .month-select {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #374151;
+      background: #1f2937;
+      color: #f9fafb;
+      margin-bottom: 16px;
+    }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    th, td {
+      width: 40px; height: 40px;
+      text-align: center;
+      border-bottom: 1px solid #1f2937;
+      transition: transform 0.2s, background 0.2s;
+      cursor: default;
+    }
+    th { color: #9ca3af; font-weight: 600; }
+    td.green { background-color: #16a34a; color: white; border-radius: 6px; }
+    td.red { background-color: #dc2626; color: white; border-radius: 6px; }
+    td.empty { background-color: #1f2937; color: #6b7280; }
+    td:hover:not(.empty) { transform: scale(1.1); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+    a.back {
+      display: inline-block;
+      margin-top: 16px;
+      text-decoration: none;
+      color: #2563eb;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    a.back:hover { color: #1d4ed8; }
+    @media(max-width: 600px){ th, td { width: 32px; height: 32px; font-size: 0.8rem; } }
+  </style>
 </head>
-<body class="container">
-  <div class="card">
-    <h1>Your Attendance</h1>
-    <p class="muted">
-      Overall: <strong>{{ overall.percentage }}%</strong> (Present: {{ overall.present }}, Absent: {{ overall.absent }})
-    </p>
+<body class="bg-gray-100 text-gray-800 font-sans">
+  <!-- Wrapper -->
+  <div class="max-w-6xl mx-auto p-6 grid lg:grid-cols-3 gap-6">
+    
+    <!-- Main Card -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- Top row -->
+      <div class="flex justify-end items-center">
+        <div class="flex items-center gap-3">
+          <span class="text-sm font-medium">Logout</span>
+          <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">U</div>
+        </div>
+      </div>
 
-    <table class="table">
-      <thead>
-        <tr>
-          <th>#</th><th>Code</th><th>Subject</th><th>Present</th><th>Absent</th><th>%</th><th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in table_data %}
-        <tr class="{% if row.status == 'Shortage' %}danger{% elif row.status == 'Condonation' %}warn{% endif %}">
-          <td>{{ row.sno }}</td>
-          <td>{{ row.code }}</td>
-          <td>{{ row.name }}</td>
-          <td>{{ row.present }}</td>
-          <td>{{ row.absent }}</td>
-          <td>{{ row.percentage }}</td>
-          <td>{{ row.status }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+      <!-- Progress Section -->
+      <div class="bg-white p-6 rounded-2xl shadow flex flex-col lg:flex-row items-center gap-8">
+        <div class="flex-1 space-y-6 order-1 lg:order-none">
+          <div class="flex items-center gap-3">
+            <div class="w-16 h-16 rounded-xl bg-orange-100 flex items-center justify-center relative">
+              <span id="streakDays" class="absolute text-orange-600 font-bold text-lg">0</span>🔥
+            </div>
+            <p class="font-medium">Streak (Consecutive Days)</p>
+          </div>
+          <div>
+            <div class="flex justify-between mb-2 text-sm font-medium">
+              <span>Daily Progress</span>
+              <span id="barText">0%</span>
+            </div>
+            <div class="relative w-full h-6 bg-gray-200 rounded-full overflow-hidden">
+              <div id="barFill" class="h-6 bg-blue-500 transition-all duration-500 ease-in-out w-0"></div>
+              <div id="person" class="absolute -top-1 left-0 text-xl"
+              style="text-shadow: 0 0 6px rgba(0,0,0,0.5);">
+                🏃‍♂️‍➡️
+                </div>
+            </div>
+            <p id="remainingText" class="text-sm text-gray-600 mt-1"></p>
+          </div>
+        </div>
+        <div class="relative w-48 h-48">
+          <svg class="w-full h-full transform rotate-90 scale-x-[-1]">
+            <circle cx="96" cy="96" r="80" stroke="#e5e7eb" stroke-width="16" fill="none"/>
+            <circle id="progressCircle" cx="96" cy="96" r="80" stroke="#3b82f6" stroke-width="16" stroke-linecap="round"
+              stroke-dasharray="502" stroke-dashoffset="502" fill="none"/>
+          </svg>
+          <div id="circleText" class="absolute inset-0 flex items-center justify-center text-3xl font-bold">0%</div>
+        </div>
+      </div>
 
-    <form action="{{ url_for('streak') }}" method="get">
-      <button type="submit" class="btn">View Streak</button>
-    </form>
+      <!-- Actions -->
+      <div class="flex gap-4">
+        <button class="flex-1 py-3 bg-white rounded-xl shadow border hover:bg-gray-50 font-medium">B-Safe</button>
+        <button class="flex-1 py-3 bg-white rounded-xl shadow border hover:bg-gray-50 font-medium">LAB</button>
+        <button class="flex-1 py-3 bg-white rounded-xl shadow border hover:bg-gray-50 font-medium">Holidays</button>
+      </div>
+
+      <!-- Calendar + Notice -->
+      <div class="grid md:grid-cols-2 gap-6">
+        <!-- Attendance Calendar -->
+        <div class="attendance-card">
+          <h3>📅 Attendance Calendar – Sep 2025</h3>
+          <label for="month-select">Select Month:</label>
+          <select id="month-select" class="month-select">
+            {% for m in months %}
+              <option value="{{ m }}" {% if m == current_month %}selected{% endif %}>{{ m }}</option>
+            {% endfor %}
+          </select>
+          <table>
+            <thead>
+              <tr>
+                <th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for week in month_days %}
+              <tr>
+                {% for day in week %}
+                  {% if day == 0 %}
+                    <td class="empty"></td>
+                  {% else %}
+                    {% set date_str = "{}-{:02d}-{:02d}".format(year, month, day) %}
+                    {% set status = streak_data.get(date_str) %}
+                    <td class="{{ status if status else 'empty' }}">{{ day }}</td>
+                  {% endif %}
+                {% endfor %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <a href="{{ url_for('attendance') }}" class="back">⬅ Back to Attendance</a>
+        </div>
+
+        <!-- Notice Board -->
+        <div class="bg-white p-4 rounded-2xl shadow">
+          <h3 class="font-bold mb-3">📌 Notice Board</h3>
+          <ul class="space-y-2 text-gray-700">
+            <li>1. Assignment 3 due: 30 Sep</li>
+            <li>2. Lab closed on 10 Sep</li>
+            <li>3. Guest lecture: 17 Sep</li>
+            <li>4. Submit feedback form</li>
+            <li>5. Campus event on 25 Sep</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel -->
+    <div class="space-y-6">
+      <div class="bg-white p-4 rounded-2xl shadow">
+        <h3 class="font-bold mb-2">Quick Links</h3>
+        <p class="text-sm text-gray-600">Profile, Settings, Logout</p>
+      </div>
+      <div class="bg-white p-4 rounded-2xl shadow">
+        <h3 class="font-bold mb-2">Stats</h3>
+        <p class="text-sm text-gray-600">Attendance / Tasks</p>
+      </div>
+    </div>
   </div>
+
+  <script>
+    // Attendance Progress Animation
+    const percent = 75, streak = 6;
+    const circle = document.getElementById("progressCircle");
+    const circleText = document.getElementById("circleText");
+    const barFill = document.getElementById("barFill");
+    const barText = document.getElementById("barText");
+    const person = document.getElementById("person");
+    const remainingText = document.getElementById("remainingText");
+    const streakDays = document.getElementById("streakDays");
+    streakDays.textContent = streak;
+    const circumference = 2 * Math.PI * 80;
+    circle.style.strokeDasharray = circumference;
+
+    let current = 0;
+    const interval = setInterval(() => {
+      if(current >= percent) { clearInterval(interval); return; }
+      current++;
+      const offset = circumference - (current / 100) * circumference;
+      circle.style.strokeDashoffset = offset;
+      circleText.textContent = current + "%";
+      barFill.style.width = current + "%";
+      barText.textContent = current + "%";
+      const barWidth = barFill.parentElement.clientWidth;
+      person.style.left = (barWidth * (current/100) - 20) + "px";
+      remainingText.textContent = (100 - current) + "% remaining";
+    }, 20);
+
+    // Month selector redirect
+    document.getElementById("month-select")?.addEventListener("change", function() {
+      const selected = this.value;
+      window.location.href = "/streak?month=" + selected;
+    });
+  </script>
 </body>
 </html>
