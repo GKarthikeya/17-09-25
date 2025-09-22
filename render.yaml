@@ -1,9 +1,12 @@
 services:
   - type: web
-    name: samvidha-attendance
+    name: flask-attendance-app
     env: docker
     plan: free
+    branch: main
     autoDeploy: true
     envVars:
       - key: FLASK_SECRET_KEY
         generateValue: true
+      - key: FLASK_DEBUG
+        value: "false"
