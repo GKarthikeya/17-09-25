@@ -7,11 +7,8 @@
 </head>
 <body class="container">
   <div class="card">
-    <h1>Your Attendance</h1>
-    <p class="muted">
-      Overall: <strong>{{ overall.percentage }}%</strong> (Present: {{ overall.present }}, Absent: {{ overall.absent }})
-    </p>
-
+    <h1>Course Attendance</h1>
+    
     <table class="table">
       <thead>
         <tr>
@@ -32,10 +29,11 @@
         {% endfor %}
       </tbody>
     </table>
+    
+    <p class="muted">
+      Overall: <strong>{{ overall.percentage }}%</strong> (Present: {{ overall.present }}, Absent: {{ overall.absent }})
+    </p>
 
-    <form action="{{ url_for('streak') }}" method="get">
-      <button type="submit" class="btn">View Streak</button>
-    </form>
   </div>
 </body>
 </html>
